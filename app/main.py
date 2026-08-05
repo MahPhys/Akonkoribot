@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from aiogram import Bot, Dispatcher
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -37,11 +38,34 @@ async def main():
     await init_db()
     logger.info("Database initialized successfully.")
 
-    # Configure Proxy for Telegram connection (e.g. socks5://127.0.0.1:10808 or http://127.0.0.1:10809)
+    # مدیریت هوشمند پروکسی (تفکیک خودکار ویندوز لوکال از Railway)
     session = None
-    if settings.PROXY_URL and settings.PROXY_URL.strip():
-        logger.info(f"Connecting to Telegram via Proxy: {settings.PROXY_URL}")
-        session = AiohttpSession(proxy=settings.PROXY_URL)
+    proxy = settings.PROXY_URL
+    
+    # بررسی وجود محیط سرور ابری یا Railway
+    is_cloud_env = any([
+        os.getenv("RAILWAY_ENVIRONMENT"),
+        os.getenv("RAILWAY_SERVICE_ID"),
+        os.getenv("RAILWAY_PROJECT_ID"),
+        os.getenv("PORT")  # سرورهای ابری معمولا متغیر PORT دارند
+    ])
+    
+    # اگر پروکسی وجود دارد بررسی کن که لوکال نباشد یا روی سرور اجرا نشده باشد
+    if proxy and proxy.strip():
+        is_local_proxy = "127.0.0.1" in proxy or "localhost" in proxy
+        
+        if is_cloud_env or is_local_proxy:
+            # اگر روی سرور باشیم پروکسی لوکال ۱۲۷ را کلاً نادیده می‌گیریم
+            if is_cloud_env:
+                logger.info("🌐 Running on Cloud/Railway: Disabling local proxy automatically.")
+            else:
+                logger.info(f"Connecting to Telegram via Proxy: {proxy}")
+                session = AiohttpSession(proxy=proxy)
+        else:
+            logger.info(f"Connecting to Telegram via Proxy: {proxy}")
+            session = AiohttpSession(proxy=proxy)
+    else:
+        logger.info("Connecting directly to Telegram (No Proxy)...")
 
     bot = Bot(token=settings.BOT_TOKEN, session=session) if session else Bot(token=settings.BOT_TOKEN)
     dp = Dispatcher(storage=MemoryStorage())
@@ -71,7 +95,7 @@ async def main():
     except Exception as e:
         logger.warning(f"Could not clear webhooks: {e}")
 
-    logger.info("🚀 Bot is running continuously in CMD! Keep this command window open.")
+    logger.info("🚀 Bot is running continuously!")
 
     await dp.start_polling(bot)
 
