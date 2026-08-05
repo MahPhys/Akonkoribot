@@ -17,3 +17,9 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# اگر در سرور ابری Railway بودیم، پروکسی را کلاً صفر کن
+IS_CLOUD = os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PORT") or os.getenv("RAILWAY_STATIC_URL")
+
+if IS_CLOUD:
+    settings.PROXY_URL = None
