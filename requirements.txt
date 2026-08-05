@@ -63,9 +63,9 @@ opencv-python==5.0.0.93
 packaging==26.2
 pathspec==1.1.1
 pdfminer.six==20260107
-pdfplumber==0.11.10
+pdfplumber
 pefile==2023.2.7
-pillow==10.4.0
+pillow
 platformdirs==4.10.0
 pluggy==1.6.0
 propcache==0.5.2
